@@ -1,0 +1,106 @@
+{
+    "version": 4,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": false,
+            "description": "Default build",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "hidden": false,
+            "description": "Debug build",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": false,
+            "description": "Release build",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "coverage-clang",
+            "hidden": false,
+            "description": "Coverage build with clang",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Coverage",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON",
+                "ENABLE_COVERAGE": "ON",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "coverage-gcc",
+            "hidden": false,
+            "description": "Coverage build with gcc",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Coverage",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON",
+                "ENABLE_COVERAGE": "ON",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "mm-clang",
+            "hidden": false,
+            "description": "Maintainer mode build with clang",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON",
+                "ENABLE_MAINTAINER_MODE": "ON",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "mm-gcc",
+            "hidden": false,
+            "description": "Maintainer mode build with gcc",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES",
+                "BUILD_TESTS": "ON",
+                "ENABLE_MAINTAINER_MODE": "ON",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "debug-vcpkg",
+            "description": "Debug + vcpkg",
+            "hidden": false,
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "toolchainFile": "${fileDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+            }
+        }
+    ]
+}
