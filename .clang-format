@@ -107,7 +107,7 @@ IncludeCategories:
     Priority:      4
     SortPriority:  0
     CaseSensitive: false
-IncludeIsMainRegex: '([-_](test|unittest))?$'
+IncludeIsMainRegex: '$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false
 IndentCaseBlocks: false
