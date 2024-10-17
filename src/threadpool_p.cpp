@@ -1,7 +1,9 @@
 #include "threadpool_p.h"
 #include "threadpool.h"
 
-namespace {
+#include <algorithm>
+
+namespace wwa {
 
 template<typename T>
 T atomic_fetch_max(std::atomic<T>& atomic_var, T new_value)
@@ -19,10 +21,6 @@ void default_after_work(bool)
 {
     // Do nothing
 }
-
-}  // namespace
-
-namespace wwa {
 
 thread_pool_private::thread_pool_private(std::size_t n)
     : m_num_threads((n == 0) ? std::thread::hardware_concurrency() : n)

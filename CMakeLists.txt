@@ -4,7 +4,6 @@ set(EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(BUILD_TESTS "Build tests" ON)
-option(ENABLE_COVERAGE "Enable coverage" OFF)
 option(ENABLE_MAINTAINER_MODE "Enable maintainer mode" OFF)
 
 project(
@@ -13,7 +12,14 @@ project(
     LANGUAGES CXX
 )
 
+if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES "Coverage" "ASAN" "LSAN" "TSAN" "UBSAN")
+endif()
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+string(TOLOWER "${CMAKE_CONFIGURATION_TYPES}" CMAKE_CONFIGURATION_TYPES_LOWER)
 
 string(REGEX MATCH "Clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_CXX_COMPILER_ID}")
 string(REGEX MATCH "GNU" CMAKE_COMPILER_IS_GNU "${CMAKE_CXX_COMPILER_ID}")
@@ -27,63 +33,25 @@ if(BUILD_TESTS)
     endif()
 endif()
 
-if(NOT BUILD_TESTS)
-    set(ENABLE_COVERAGE OFF)
-endif()
-
-macro(disable_coverage reason)
-    message(WARNING "${reason}, coverage will not be enabled")
-    set(ENABLE_COVERAGE OFF)
-    if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
-        set(CMAKE_BUILD_TYPE "Debug")
-    endif()
-endmacro(disable_coverage)
-
-if(ENABLE_COVERAGE OR CMAKE_BUILD_TYPE STREQUAL "Coverage")
-    if(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
-        find_program(GCOVR gcovr)
-        if (GCOVR)
-            if(CMAKE_COMPILER_IS_GNU)
-                find_program(GCOV gcov)
-                set(GCOV_TOOL_NAME gcov)
-                set(GCOV_TOOL gcov)
-            elseif(CMAKE_COMPILER_IS_CLANG)
-                find_program(GCOV llvm-cov)
-                set(GCOV_TOOL_NAME llvm-cov)
-                set(GCOV_TOOL llvm-cov gcov)
-            endif()
-
-            if(GCOV)
-                set(CMAKE_BUILD_TYPE "Coverage")
-            else()
-                disable_coverage("${GCOV_TOOL_NAME} not found")
-            endif()
-        else()
-            disable_coverage("gcovr not found")
-        endif()
-    else()
-        disable_coverage("coverage is only supported with clang or GCC")
-    endif()
-endif()
-
-if(CMAKE_COMPILER_IS_GNU)
-    set(CMAKE_CXX_FLAGS_COVERAGE "-Og -g3 --coverage -fprofile-abs-path")
-elseif(CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_CXX_FLAGS_COVERAGE "-Og -g3 --coverage")
-endif()
-
 if(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_EXE_LINKER_FLAGS_COVERAGE "--coverage")
-    set(CMAKE_MODULE_LINKER_FLAGS_COVERAGE "--coverage")
-    set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE "--coverage")
+    set(CMAKE_CXX_FLAGS_ASAN "-O1 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+    set(CMAKE_CXX_FLAGS_TSAN "-O1 -g -fsanitize=thread -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS_LSAN "-O1 -g -fsanitize=leak -fno-omit-frame-pointer -fno-optimize-sibling-calls")
+
+    if(CMAKE_COMPILER_IS_GNU)
+        set(CMAKE_CXX_FLAGS_COVERAGE "-Og -g --coverage -fprofile-abs-path")
+        set(CMAKE_CXX_FLAGS_UBSAN "-O1 -g -fsanitize=undefined -fsanitize=float-divide-by-zero -fno-omit-frame-pointer")
+    elseif(CMAKE_COMPILER_IS_CLANG)
+        set(CMAKE_CXX_FLAGS_COVERAGE "-O1 -g --coverage")
+        set(CMAKE_CXX_FLAGS_UBSAN "-O1 -g -fsanitize=undefined -fsanitize=float-divide-by-zero -fsanitize=integer -fsanitize=implicit-conversion -fsanitize=local-bounds -fsanitize=nullability -fno-omit-frame-pointer")
+    endif()
 endif()
 
 if(ENABLE_MAINTAINER_MODE)
-    if(CMAKE_COMPILER_IS_CLANG)
-        add_compile_options(-Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -pedantic)
-    elseif(CMAKE_COMPILER_IS_GNU)
-        add_compile_options(-Wall -Wextra -Werror -pedantic)
-    endif()
+    add_compile_options(
+        "$<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-Weverything;-Werror;-Wno-c++98-compat;-Wno-c++98-compat-pedantic;-Wno-missing-prototypes;-pedantic>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall;-Wextra;-Werror;-pedantic>"
+    )
 endif()
 
 find_package(Threads REQUIRED)

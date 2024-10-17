@@ -25,7 +25,7 @@ TEST_F(OneThreadPoolTest, SequentialExecution)
     std::unique_lock<std::mutex> lock(this->m_mutex);
 
     for (int i = 0; i < NUM_TASKS; ++i) {
-        m_pool->submit([this, i](const std::stop_token&) {
+        m_pool->submit([this, i](const std::stop_token &) {
             const std::unique_lock<std::mutex> lck(this->m_mutex);
             this->m_results.push_back(i);
         });
@@ -57,7 +57,7 @@ TEST_F(OneThreadPoolTest, Cancel)
     std::unique_lock<std::mutex> lock(this->m_mutex);
 
     for (int i = 0; i < NUM_TASKS; ++i) {
-        tasks.push_back(this->m_pool->submit([this, i](const std::stop_token&) {
+        tasks.push_back(this->m_pool->submit([this, i](const std::stop_token &) {
             const std::unique_lock<std::mutex> lck(this->m_mutex);
             this->m_results.push_back(i);
         }));
@@ -78,7 +78,7 @@ TEST_F(OneThreadPoolTest, Cancel)
 
 TEST_F(OneThreadPoolTest, CancelCompletedTask)
 {
-    auto task = this->m_pool->submit([](const std::stop_token&) { /* Do nothing */ });
+    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
     this->m_pool->wait();
     auto result = this->m_pool->cancel(task);
     EXPECT_FALSE(result);
@@ -89,8 +89,8 @@ TEST_F(OneThreadPoolTest, DoubleCancel)
 {
     std::unique_lock<std::mutex> lock(this->m_mutex);
 
-    this->m_pool->submit([this](const std::stop_token&) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
-    auto task = this->m_pool->submit([](const std::stop_token&) { /* Do nothing */ });
+    this->m_pool->submit([this](const std::stop_token &) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
+    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
 
     auto sp_task = task.lock();
     ASSERT_TRUE(sp_task);
@@ -109,8 +109,8 @@ TEST_F(OneThreadPoolTest, CancelQueuedTask)
 {
     std::unique_lock<std::mutex> lock(this->m_mutex);
 
-    this->m_pool->submit([this](const std::stop_token&) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
-    auto task = this->m_pool->submit([](const std::stop_token&) { /* Do nothing */ });
+    this->m_pool->submit([this](const std::stop_token &) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
+    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
 
     auto sp_task = task.lock();
     ASSERT_TRUE(sp_task);
