@@ -9,6 +9,8 @@ option(ENABLE_MAINTAINER_MODE "Enable maintainer mode" OFF)
 project(
     wwa-simple-threadpool
     VERSION 1.0.0
+    DESCRIPTION "libuv-like threadpool"
+    HOMEPAGE_URL "https://github.com/sjinks/simple-threadpool"
     LANGUAGES CXX
 )
 
@@ -84,6 +86,8 @@ set_target_properties(
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
         POSITION_INDEPENDENT_CODE ON
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC WWA_SIMPLE_THREADPOOL_STATIC_DEFINE)
