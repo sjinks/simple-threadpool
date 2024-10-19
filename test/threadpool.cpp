@@ -9,6 +9,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+const auto empty_task = [](const std::stop_token &) { /* Do nothing */ };
+
 class ThreadPoolTest : public ::testing::Test {
 protected:
     void SetUp() override { this->m_pool = std::make_unique<wwa::thread_pool>(ThreadPoolTest::NUM_THREADS); }
@@ -48,14 +50,11 @@ TEST_F(ThreadPoolTest, Counters)
         [&first_task_has_exception](bool) { first_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0; }
     );
 
-    this->m_pool->submit(
-        [](const std::stop_token &) { /* Do nothing */ },
-        [&second_task_has_exception](bool) {
-            second_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0;
-        }
-    );
+    this->m_pool->submit(empty_task, [&second_task_has_exception](bool) {
+        second_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0;
+    });
 
-    m_pool->wait();
+    this->m_pool->wait();
 
     EXPECT_EQ(m_pool->tasks_queued(), 2);
     EXPECT_EQ(m_pool->tasks_completed(), 1);

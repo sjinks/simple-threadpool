@@ -51,7 +51,7 @@ endif()
 
 if(ENABLE_MAINTAINER_MODE)
     add_compile_options(
-        "$<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-Weverything;-Werror;-Wno-c++98-compat;-Wno-c++98-compat-pedantic;-Wno-missing-prototypes;-pedantic>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-Weverything;-Werror;-Wno-c++98-compat;-Wno-c++98-compat-pedantic;-Wno-missing-prototypes;-Wno-padded;-pedantic>"
         "$<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall;-Wextra;-Werror;-pedantic>"
     )
 endif()

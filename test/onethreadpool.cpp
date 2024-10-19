@@ -5,6 +5,10 @@
 #include "threadpool.h"
 #include "threadpool_p.h"  // IWYU pragma: keep: complete definition of work_item
 
+using unique_lock = std::unique_lock<std::mutex>;
+
+const auto empty_task = [](const std::stop_token &) { /* Do nothing */ };
+
 class OneThreadPoolTest : public ::testing::Test {
 protected:
     void SetUp() override { this->m_pool = std::make_unique<wwa::thread_pool>(1); }
@@ -22,22 +26,23 @@ TEST_F(OneThreadPoolTest, SequentialExecution)
     std::vector<int> expected(NUM_TASKS);
     std::iota(expected.begin(), expected.end(), 0);
 
-    std::unique_lock<std::mutex> lock(this->m_mutex);
+    {
+        unique_lock lock(this->m_mutex);
 
-    for (int i = 0; i < NUM_TASKS; ++i) {
-        m_pool->submit([this, i](const std::stop_token &) {
-            const std::unique_lock<std::mutex> lck(this->m_mutex);
-            this->m_results.push_back(i);
-        });
+        for (int i = 0; i < NUM_TASKS; ++i) {
+            m_pool->submit([this, i](const std::stop_token &) {
+                const unique_lock lck(this->m_mutex);
+                this->m_results.push_back(i);
+            });
+        }
+
+        EXPECT_EQ(this->m_pool->num_threads(), 1);
+        EXPECT_LE(this->m_pool->active_threads(), 1);
+        EXPECT_LE(this->m_pool->max_active_threads(), 1);
+        EXPECT_LE(this->m_pool->work_queue_size(), NUM_TASKS);
+        EXPECT_GE(this->m_pool->work_queue_size(), NUM_TASKS - 1);
     }
 
-    EXPECT_EQ(this->m_pool->num_threads(), 1);
-    EXPECT_LE(this->m_pool->active_threads(), 1);
-    EXPECT_LE(this->m_pool->max_active_threads(), 1);
-    EXPECT_LE(this->m_pool->work_queue_size(), NUM_TASKS);
-    EXPECT_GE(this->m_pool->work_queue_size(), NUM_TASKS - 1);
-
-    lock.unlock();
     this->m_pool->wait();
 
     EXPECT_EQ(this->m_results, expected);
@@ -54,22 +59,23 @@ TEST_F(OneThreadPoolTest, Cancel)
     std::iota(expected.begin(), expected.end(), 0);
     tasks.reserve(NUM_TASKS);
 
-    std::unique_lock<std::mutex> lock(this->m_mutex);
+    {
+        unique_lock lock(this->m_mutex);
 
-    for (int i = 0; i < NUM_TASKS; ++i) {
-        tasks.push_back(this->m_pool->submit([this, i](const std::stop_token &) {
-            const std::unique_lock<std::mutex> lck(this->m_mutex);
-            this->m_results.push_back(i);
-        }));
+        for (int i = 0; i < NUM_TASKS; ++i) {
+            tasks.push_back(this->m_pool->submit([this, i](const std::stop_token &) {
+                const unique_lock lck(this->m_mutex);
+                this->m_results.push_back(i);
+            }));
+        }
+
+        ASSERT_EQ(tasks.size(), NUM_TASKS);
+        auto result = this->m_pool->cancel(tasks[NUM_TASKS - 1]);
+        EXPECT_TRUE(result);
+
+        expected.pop_back();
     }
 
-    ASSERT_EQ(tasks.size(), NUM_TASKS);
-    auto result = this->m_pool->cancel(tasks[NUM_TASKS - 1]);
-    EXPECT_TRUE(result);
-
-    expected.pop_back();
-
-    lock.unlock();
     this->m_pool->wait();
 
     EXPECT_EQ(this->m_results, expected);
@@ -78,7 +84,7 @@ TEST_F(OneThreadPoolTest, Cancel)
 
 TEST_F(OneThreadPoolTest, CancelCompletedTask)
 {
-    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
+    auto task = this->m_pool->submit(empty_task);
     this->m_pool->wait();
     auto result = this->m_pool->cancel(task);
     EXPECT_FALSE(result);
@@ -87,38 +93,40 @@ TEST_F(OneThreadPoolTest, CancelCompletedTask)
 
 TEST_F(OneThreadPoolTest, DoubleCancel)
 {
-    std::unique_lock<std::mutex> lock(this->m_mutex);
+    {
+        unique_lock lock(this->m_mutex);
 
-    this->m_pool->submit([this](const std::stop_token &) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
-    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
+        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        auto task = this->m_pool->submit(empty_task);
 
-    auto sp_task = task.lock();
-    ASSERT_TRUE(sp_task);
+        auto sp_task = task.lock();
+        ASSERT_TRUE(sp_task);
 
-    bool result = this->m_pool->cancel(task);
-    EXPECT_TRUE(result);
-    result = this->m_pool->cancel(task);
-    EXPECT_FALSE(result);
+        bool result = this->m_pool->cancel(task);
+        EXPECT_TRUE(result);
+        result = this->m_pool->cancel(task);
+        EXPECT_FALSE(result);
+    }
 
-    lock.unlock();
     this->m_pool->wait();
     EXPECT_EQ(this->m_pool->tasks_canceled(), 1);
 }
 
 TEST_F(OneThreadPoolTest, CancelQueuedTask)
 {
-    std::unique_lock<std::mutex> lock(this->m_mutex);
+    {
+        unique_lock lock(this->m_mutex);
 
-    this->m_pool->submit([this](const std::stop_token &) { const std::unique_lock<std::mutex> lck(this->m_mutex); });
-    auto task = this->m_pool->submit([](const std::stop_token &) { /* Do nothing */ });
+        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        auto task = this->m_pool->submit(empty_task);
 
-    auto sp_task = task.lock();
-    ASSERT_TRUE(sp_task);
+        auto sp_task = task.lock();
+        ASSERT_TRUE(sp_task);
 
-    sp_task->stop();
-    EXPECT_TRUE(sp_task->stop_requested());
+        sp_task->stop();
+        EXPECT_TRUE(sp_task->stop_requested());
+    }
 
-    lock.unlock();
     this->m_pool->wait();
     EXPECT_EQ(this->m_pool->tasks_canceled(), 1);
 }
