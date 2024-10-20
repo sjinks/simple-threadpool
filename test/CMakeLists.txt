@@ -39,8 +39,6 @@ if("coverage" IN_LIST CMAKE_CONFIGURATION_TYPES_LOWER OR "coverage" STREQUAL CMA
         else()
             message(WARNING "gcovr not found, coverage report will not be generated")
         endif()
-    else()
-        message(WARNING "coverage is only supported with clang or GCC, coverage report will not be generated")
     endif()
 endif()
 
