@@ -27,7 +27,7 @@ TEST_F(OneThreadPoolTest, SequentialExecution)
     std::iota(expected.begin(), expected.end(), 0);
 
     {
-        unique_lock lock(this->m_mutex);
+        const unique_lock lock(this->m_mutex);
 
         for (int i = 0; i < NUM_TASKS; ++i) {
             m_pool->submit([this, i](const std::stop_token &) {
@@ -60,7 +60,7 @@ TEST_F(OneThreadPoolTest, Cancel)
     tasks.reserve(NUM_TASKS);
 
     {
-        unique_lock lock(this->m_mutex);
+        const unique_lock lock(this->m_mutex);
 
         for (int i = 0; i < NUM_TASKS; ++i) {
             tasks.push_back(this->m_pool->submit([this, i](const std::stop_token &) {
@@ -94,7 +94,7 @@ TEST_F(OneThreadPoolTest, CancelCompletedTask)
 TEST_F(OneThreadPoolTest, DoubleCancel)
 {
     {
-        unique_lock lock(this->m_mutex);
+        const unique_lock lock(this->m_mutex);
 
         this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
         auto task = this->m_pool->submit(empty_task);
@@ -115,7 +115,7 @@ TEST_F(OneThreadPoolTest, DoubleCancel)
 TEST_F(OneThreadPoolTest, CancelQueuedTask)
 {
     {
-        unique_lock lock(this->m_mutex);
+        const unique_lock lock(this->m_mutex);
 
         this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
         auto task = this->m_pool->submit(empty_task);
