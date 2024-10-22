@@ -5,6 +5,8 @@
 
 namespace wwa {
 
+using unique_lock = std::unique_lock<std::mutex>;
+
 template<typename T>
 T atomic_fetch_max(std::atomic<T>& atomic_var, T new_value)
 {
@@ -58,7 +60,7 @@ thread_pool_private::~thread_pool_private()
 thread_pool::task_t
 thread_pool_private::submit(const thread_pool::worker_t& worker, const thread_pool::after_work_t& after_work)
 {
-    ++this->m_tasks_queued;
+    this->m_tasks_queued.fetch_add(1U, std::memory_order_relaxed);
     const std::scoped_lock<std::mutex> lock(this->m_mutex);
     const auto& item = this->m_work_queue.emplace_back(
         std::make_shared<work_item>(worker, after_work ? after_work : default_after_work)
@@ -81,7 +83,7 @@ bool thread_pool_private::cancel(const thread_pool::task_t& task)
     const std::scoped_lock<std::mutex> lock(this->m_mutex);
     if (auto it = std::ranges::find_if(this->m_work_queue, predicate); it != this->m_work_queue.end()) {
         this->m_work_queue.erase(it);
-        ++this->m_tasks_canceled;
+        this->m_tasks_canceled.fetch_add(1U, std::memory_order_relaxed);
         return true;
     }
 
@@ -90,7 +92,7 @@ bool thread_pool_private::cancel(const thread_pool::task_t& task)
 
 void thread_pool_private::wait()
 {
-    std::unique_lock<std::mutex> lock(this->m_mutex);
+    unique_lock lock(this->m_mutex);
     this->m_drained_cv.wait(lock, [this] { return this->m_work_queue.empty() && this->m_active_threads == 0; });
 }
 
@@ -140,7 +142,7 @@ void thread_pool_private::worker_thread(
 )
 {
     while (!stop_token.stop_requested()) {
-        std::unique_lock<std::mutex> lock(pool->m_mutex);
+        unique_lock lock(pool->m_mutex);
         pool->m_cv.wait(lock, stop_token, [&pool] { return !pool->m_work_queue.empty(); });
 
         if (!stop_token.stop_requested()) {
@@ -154,7 +156,7 @@ void thread_pool_private::worker_thread(
                 lock.lock();
             }
             else {
-                ++pool->m_tasks_canceled;
+                pool->m_tasks_canceled.fetch_add(1U, std::memory_order_relaxed);
             }
 
             if (pool->m_work_queue.empty() && pool->m_active_threads == 0) {
@@ -166,20 +168,20 @@ void thread_pool_private::worker_thread(
 
 void thread_pool_private::run_task(const std::shared_ptr<work_item>& task)
 {
-    auto n = ++this->m_active_threads;
+    auto n = this->m_active_threads.fetch_add(1U, std::memory_order_relaxed) + 1U;
     atomic_fetch_max(this->m_max_active_threads, n);
 
     try {
         task->worker(task->stop_source.get_token());
         task->after_work(false);
-        ++this->m_tasks_completed;
+        this->m_tasks_completed.fetch_add(1U, std::memory_order_relaxed);
     }
     catch (const std::exception&) {
         task->after_work(false);
-        ++this->m_tasks_failed;
+        this->m_tasks_failed.fetch_add(1U, std::memory_order_relaxed);
     }
 
-    --this->m_active_threads;
+    this->m_active_threads.fetch_sub(1U, std::memory_order_relaxed);
 }
 
 }  // namespace wwa
