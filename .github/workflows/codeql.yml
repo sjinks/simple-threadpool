@@ -52,7 +52,7 @@ jobs:
       - name: Build
         run: |
           cmake -B build
-          cmake --build build
+          cmake --build build -j $(nproc)
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
