@@ -1,11 +1,9 @@
-include(FindGTest)
-find_package(GTest REQUIRED)
-
 add_executable(test_threadpool onethreadpool.cpp threadpool.cpp)
 target_link_libraries(test_threadpool PRIVATE ${PROJECT_NAME} GTest::gmock_main)
 set_target_properties(test_threadpool PROPERTIES CXX_STANDARD 20)
 
 if(ENABLE_MAINTAINER_MODE)
+    target_compile_options(test_threadpool PRIVATE ${CMAKE_CXX_FLAGS_MM})
     if(CMAKE_COMPILER_IS_CLANG)
         target_compile_options(test_threadpool PRIVATE -Wno-weak-vtables -Wno-global-constructors -Wno-padded)
     endif()
@@ -53,6 +51,8 @@ if(ENABLE_COVERAGE)
                 --html-details -o "${PROJECT_BINARY_DIR}/coverage/index.html"
                 --exclude-noncode-lines --exclude-throw-branches --exclude-unreachable-branches --decisions
                 --gcov-executable="${GCOV_TOOL}"
+                --gcov-exclude-directories "${PROJECT_SOURCE_DIR}/vcpkg"
+                --gcov-delete
                 --print-summary
                 --txt "${PROJECT_BINARY_DIR}/coverage/coverage.txt"
                 --lcov "${PROJECT_BINARY_DIR}/coverage/coverage.lcov"
