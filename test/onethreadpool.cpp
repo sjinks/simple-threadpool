@@ -1,3 +1,4 @@
+#include <chrono>
 #include <mutex>
 #include <numeric>
 #include <vector>
@@ -30,7 +31,7 @@ TEST_F(OneThreadPoolTest, SequentialExecution)
         const unique_lock lock(this->m_mutex);
 
         for (int i = 0; i < NUM_TASKS; ++i) {
-            m_pool->submit([this, i](const std::stop_token &) {
+            this->m_pool->submit([this, i](const std::stop_token &) {
                 const unique_lock lck(this->m_mutex);
                 this->m_results.push_back(i);
             });
@@ -129,4 +130,20 @@ TEST_F(OneThreadPoolTest, CancelQueuedTask)
 
     this->m_pool->wait();
     EXPECT_EQ(this->m_pool->tasks_canceled(), 1);
+}
+
+TEST_F(OneThreadPoolTest, Wait)
+{
+    {
+        const unique_lock lock(this->m_mutex);
+        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        EXPECT_FALSE(this->m_pool->wait_for(std::chrono::microseconds(10)));
+    }
+
+    EXPECT_TRUE(this->m_pool->wait_until(std::chrono::system_clock::now() + std::chrono::milliseconds(1)));
+}
+
+TEST_F(OneThreadPoolTest, WaitUntilPast)
+{
+    EXPECT_FALSE(this->m_pool->wait_until(std::chrono::system_clock::now() - std::chrono::seconds(1)));
 }

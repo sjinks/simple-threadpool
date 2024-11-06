@@ -29,6 +29,7 @@ public:
 
     bool cancel(const thread_pool::task_t& task);
     void wait();
+    bool wait_until(const std::chrono::time_point<std::chrono::steady_clock>& abs_time);
 
     std::size_t num_threads() const noexcept;
     std::size_t active_threads() const noexcept;

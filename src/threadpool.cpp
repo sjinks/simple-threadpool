@@ -26,6 +26,11 @@ void thread_pool::wait()
     this->m_impl->wait();
 }
 
+bool thread_pool::wait_until(const std::chrono::time_point<std::chrono::steady_clock>& abs_time)
+{
+    return this->m_impl->wait_until(abs_time);
+}
+
 std::size_t thread_pool::num_threads() const noexcept
 {
     return this->m_impl->num_threads();

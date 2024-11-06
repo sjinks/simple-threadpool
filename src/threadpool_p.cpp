@@ -3,12 +3,10 @@
 
 #include <algorithm>
 
-namespace wwa {
-
-using unique_lock = std::unique_lock<std::mutex>;
+namespace {
 
 template<typename T>
-T atomic_fetch_max(std::atomic<T>& atomic_var, T new_value)
+inline T atomic_fetch_max(std::atomic<T>& atomic_var, T new_value)
 {
     T old_value = atomic_var.load();
 
@@ -23,6 +21,11 @@ void default_after_work(bool)
 {
     // Do nothing
 }
+
+}  // namespace
+namespace wwa {
+
+using unique_lock = std::unique_lock<std::mutex>;
 
 thread_pool_private::thread_pool_private(std::size_t n)
     : m_num_threads((n == 0) ? std::thread::hardware_concurrency() : n)
@@ -94,6 +97,14 @@ void thread_pool_private::wait()
 {
     unique_lock lock(this->m_mutex);
     this->m_drained_cv.wait(lock, [this] { return this->m_work_queue.empty() && this->m_active_threads == 0; });
+}
+
+bool thread_pool_private::wait_until(const std::chrono::time_point<std::chrono::steady_clock>& abs_time)
+{
+    unique_lock lock(this->m_mutex);
+    return this->m_drained_cv.wait_until(lock, abs_time, [this] {
+        return this->m_work_queue.empty() && this->m_active_threads == 0;
+    });
 }
 
 std::size_t thread_pool_private::num_threads() const noexcept
