@@ -6,6 +6,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(BUILD_TESTS "Build tests" ON)
 option(ENABLE_MAINTAINER_MODE "Enable maintainer mode" OFF)
 
+include(FetchContent)
+
 project(
     wwa-simple-threadpool
     VERSION 1.0.0
@@ -28,10 +30,20 @@ string(REGEX MATCH "GNU" CMAKE_COMPILER_IS_GNU "${CMAKE_CXX_COMPILER_ID}")
 
 if(BUILD_TESTS)
     include(FindGTest)
-    find_package(GTest CONFIG COMPONENTS gtest gmock)
-    if(NOT TARGET GTest::gtest OR NOT TARGET GTest::gmock)
-        message(WARNING "GTest not found, tests will not be built")
-        set(BUILD_TESTS OFF)
+    find_package(GTest CONFIG)
+    if(NOT TARGET GTest::gtest)
+        message(STATUS "Google Test not found, fetching it from GitHub")
+        # renovate: datasource=github-tags depName=google/googletest
+        set(GTEST_VERSION "v1.15.2")
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest
+            GIT_TAG "${GTEST_VERSION}"
+            GIT_SHALLOW ON
+        )
+
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        FetchContent_MakeAvailable(googletest)
     endif()
 endif()
 
@@ -50,10 +62,11 @@ if(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
 endif()
 
 if(ENABLE_MAINTAINER_MODE)
-    add_compile_options(
-        "$<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-Weverything;-Werror;-Wno-c++98-compat;-Wno-c++98-compat-pedantic;-Wno-missing-prototypes;-Wno-padded;-pedantic>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall;-Wextra;-Werror;-pedantic>"
-    )
+    if(CMAKE_COMPILER_IS_CLANG)
+        set(CMAKE_CXX_FLAGS_MM -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-missing-prototypes -Wno-padded -pedantic)
+    elseif(CMAKE_COMPILER_IS_GNU)
+        set(CMAKE_CXX_FLAGS_MM -Wall -Wextra -Werror -pedantic)
+    endif()
 endif()
 
 find_package(Threads REQUIRED)
@@ -91,6 +104,9 @@ set_target_properties(
 )
 if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PUBLIC WWA_SIMPLE_THREADPOOL_STATIC_DEFINE)
+endif()
+if(ENABLE_MAINTAINER_MODE)
+    target_compile_options(${PROJECT_NAME} PRIVATE ${CMAKE_CXX_FLAGS_MM})
 endif()
 
 if(BUILD_TESTS)
