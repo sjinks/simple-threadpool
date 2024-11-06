@@ -107,7 +107,6 @@ if(CLANG_FORMAT OR CLANG_TIDY)
     file(GLOB_RECURSE ALL_HEADER_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} LIST_DIRECTORIES OFF src/*.h test/*.h)
 
     if(CLANG_FORMAT)
-        message(STATUS "${ALL_SOURCE_FILES}")
         add_custom_target(
             format
             COMMAND ${CLANG_FORMAT} --Wno-error=unknown -i -style=file ${ALL_SOURCE_FILES} ${ALL_HEADER_FILES}
