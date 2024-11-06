@@ -1,6 +1,7 @@
 #ifndef DB57AD06_3B44_40FF_A554_841402EFC389
 #define DB57AD06_3B44_40FF_A554_841402EFC389
 
+#include <chrono>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -30,6 +31,28 @@ public:
     task_t submit(const worker_t& worker, const after_work_t& after_work = nullptr);
     bool cancel(const task_t& task);
     void wait();
+
+    template<typename Rep, typename Period>
+    bool wait_for(const std::chrono::duration<Rep, Period>& rel_time)
+    {
+        return this->wait_until(std::chrono::steady_clock::now() + rel_time);
+    }
+
+    template<typename Clock, typename Duration>
+    bool wait_until(const std::chrono::time_point<Clock, Duration>& abs_time)
+    {
+        auto now = Clock::now();
+        if (abs_time <= now) {
+            return false;
+        }
+
+        auto duration_until_abs_time = abs_time - now;
+        auto steady_abs_time         = std::chrono::steady_clock::now() + duration_until_abs_time;
+
+        return this->wait_until(steady_abs_time);
+    }
+
+    bool wait_until(const std::chrono::time_point<std::chrono::steady_clock>& abs_time);
 
     [[nodiscard]] std::size_t num_threads() const noexcept;
     [[nodiscard]] std::size_t active_threads() const noexcept;
