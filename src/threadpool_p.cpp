@@ -2,6 +2,8 @@
 #include "threadpool.h"
 
 #include <algorithm>
+#include <exception>
+#include <utility>
 
 namespace {
 

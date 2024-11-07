@@ -1,15 +1,23 @@
-#include "threadpool.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include <chrono>
 #include <condition_variable>
 #include <exception>
 #include <functional>
 #include <latch>
+#include <memory>
+#include <mutex>
 #include <numeric>
 #include <semaphore>
+#include <stdexcept>
+#include <stop_token>
 #include <thread>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+#include <vector>
 
-const auto empty_task = [](const std::stop_token &) { /* Do nothing */ };
+#include "threadpool.h"
+
+const auto empty_task = [](const std::stop_token&) { /* Do nothing */ };
 
 class ThreadPoolTest : public ::testing::Test {
 protected:
@@ -46,7 +54,7 @@ TEST_F(ThreadPoolTest, Counters)
     int second_task_has_exception = -1;
 
     this->m_pool->submit(
-        [](const std::stop_token &) { throw std::runtime_error("Task failed"); },
+        [](const std::stop_token&) { throw std::runtime_error("Task failed"); },
         [&first_task_has_exception](bool) { first_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0; }
     );
 
@@ -77,7 +85,7 @@ TEST_F(ThreadPoolTest, ParallelExecution)
     results.reserve(ThreadPoolTest::NUM_THREADS);
 
     for (auto i = 0U; i < ThreadPoolTest::NUM_THREADS; ++i) {
-        m_pool->submit([&results, &sem, &latch, i](const std::stop_token &) {
+        m_pool->submit([&results, &sem, &latch, i](const std::stop_token&) {
             latch.count_down();
             sem.acquire();
             results.push_back(i);
@@ -122,7 +130,7 @@ TEST(ConstructionDestructionTest, DestructionWithActiveTasks)
         wwa::thread_pool pool(NUM_THREADS);
         for (auto i = 0U; i < NUM_TASKS; ++i) {
             pool.submit(
-                [&latch](const std::stop_token &token) {
+                [&latch](const std::stop_token& token) {
                     latch.count_down();
                     std::mutex m;
                     std::unique_lock<std::mutex> lock(m);
