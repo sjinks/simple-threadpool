@@ -1,14 +1,18 @@
+#include <gtest/gtest.h>
+
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <numeric>
+#include <stop_token>
 #include <vector>
-#include <gtest/gtest.h>
+
 #include "threadpool.h"
-#include "threadpool_p.h"  // IWYU pragma: keep: complete definition of work_item
+#include "threadpool_p.h"  // IWYU pragma: keep
 
 using unique_lock = std::unique_lock<std::mutex>;
 
-const auto empty_task = [](const std::stop_token &) { /* Do nothing */ };
+const auto empty_task = [](const std::stop_token&) { /* Do nothing */ };
 
 class OneThreadPoolTest : public ::testing::Test {
 protected:
@@ -31,7 +35,7 @@ TEST_F(OneThreadPoolTest, SequentialExecution)
         const unique_lock lock(this->m_mutex);
 
         for (int i = 0; i < NUM_TASKS; ++i) {
-            this->m_pool->submit([this, i](const std::stop_token &) {
+            this->m_pool->submit([this, i](const std::stop_token&) {
                 const unique_lock lck(this->m_mutex);
                 this->m_results.push_back(i);
             });
@@ -64,7 +68,7 @@ TEST_F(OneThreadPoolTest, Cancel)
         const unique_lock lock(this->m_mutex);
 
         for (int i = 0; i < NUM_TASKS; ++i) {
-            tasks.push_back(this->m_pool->submit([this, i](const std::stop_token &) {
+            tasks.push_back(this->m_pool->submit([this, i](const std::stop_token&) {
                 const unique_lock lck(this->m_mutex);
                 this->m_results.push_back(i);
             }));
@@ -97,7 +101,7 @@ TEST_F(OneThreadPoolTest, DoubleCancel)
     {
         const unique_lock lock(this->m_mutex);
 
-        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        this->m_pool->submit([this](const std::stop_token&) { const unique_lock lck(this->m_mutex); });
         auto task = this->m_pool->submit(empty_task);
 
         auto sp_task = task.lock();
@@ -118,7 +122,7 @@ TEST_F(OneThreadPoolTest, CancelQueuedTask)
     {
         const unique_lock lock(this->m_mutex);
 
-        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        this->m_pool->submit([this](const std::stop_token&) { const unique_lock lck(this->m_mutex); });
         auto task = this->m_pool->submit(empty_task);
 
         auto sp_task = task.lock();
@@ -136,7 +140,7 @@ TEST_F(OneThreadPoolTest, Wait)
 {
     {
         const unique_lock lock(this->m_mutex);
-        this->m_pool->submit([this](const std::stop_token &) { const unique_lock lck(this->m_mutex); });
+        this->m_pool->submit([this](const std::stop_token&) { const unique_lock lck(this->m_mutex); });
         EXPECT_FALSE(this->m_pool->wait_for(std::chrono::microseconds(10)));
     }
 

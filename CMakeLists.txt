@@ -30,8 +30,8 @@ string(REGEX MATCH "GNU" CMAKE_COMPILER_IS_GNU "${CMAKE_CXX_COMPILER_ID}")
 
 if(BUILD_TESTS)
     include(FindGTest)
-    find_package(GTest CONFIG)
-    if(NOT TARGET GTest::gtest)
+    find_package(GTest CONFIG COMPONENTS gtest gmock)
+    if(NOT TARGET GTest::gtest OR NOT TARGET GTest::gmock)
         message(STATUS "Google Test not found, fetching it from GitHub")
         # renovate: datasource=github-tags depName=google/googletest
         set(GTEST_VERSION "v1.15.2")
@@ -80,6 +80,7 @@ target_sources(
         BASE_DIRS src
         FILES
             src/export.h
+            src/packaged_task.h
             src/threadpool.h
     PRIVATE
         src/threadpool.cpp
@@ -96,6 +97,9 @@ target_include_directories(
 set_target_properties(
     ${PROJECT_NAME}
     PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
         POSITION_INDEPENDENT_CODE ON
@@ -147,7 +151,7 @@ install(
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
+    FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/wwa/simple-threadpool"
 )
 
 install(

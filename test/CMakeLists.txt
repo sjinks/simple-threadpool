@@ -1,6 +1,12 @@
-add_executable(test_threadpool onethreadpool.cpp threadpool.cpp)
+add_executable(test_threadpool onethreadpool.cpp packaged_task.cpp threadpool.cpp)
 target_link_libraries(test_threadpool PRIVATE ${PROJECT_NAME} GTest::gmock_main)
-set_target_properties(test_threadpool PROPERTIES CXX_STANDARD 20)
+set_target_properties(
+    test_threadpool
+    PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
 
 if(ENABLE_MAINTAINER_MODE)
     target_compile_options(test_threadpool PRIVATE ${CMAKE_CXX_FLAGS_MM})

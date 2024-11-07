@@ -1,6 +1,9 @@
 #include "threadpool.h"
 #include "threadpool_p.h"
 
+#include <memory>
+#include <stdexcept>
+
 namespace wwa {
 
 thread_pool::thread_pool(std::size_t n) : m_impl(std::make_unique<thread_pool_private>(n)) {}
