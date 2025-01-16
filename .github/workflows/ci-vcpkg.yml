@@ -48,7 +48,7 @@ jobs:
 
       - name: Fix for AppleClang
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
           echo "CXXFLAGS=-fexperimental-library" >> "${GITHUB_ENV}"
         if: runner.os == 'macOS'
 
