@@ -39,5 +39,5 @@ jobs:
       - name: clang-format Check
         uses: jidicula/clang-format-action@d05cecd4a1a5b7e64c22f5a468456135a43f13f6 # v4.14.0
         with:
-          clang-format-version: 18
+          clang-format-version: 19
           check-path: ${{ matrix.path }}
