@@ -65,19 +65,22 @@ jobs:
         uses: ./.github/actions/install-dependencies
 
       - name: Run tests
-        run: ctest -V -S "ci/${{ matrix.script }}.ctest.cmake"
+        run: ctest --output-on-failure -V -S "ci/${{ matrix.script }}.ctest.cmake"
 
       - name: Upload test tesults
         if: always()
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: Test Results (${{ matrix.script }})
-          path: build/junit.xml
+          path: |
+            build/junit.xml
+            build/Testing/Temporary/MemoryChecker.*.log
 
   publish:
     needs: test
     name: Publish Results
     runs-on: ubuntu-latest
+    if: always()
     permissions:
       contents: read
       checks: write
@@ -97,3 +100,4 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b # v2.18.0
         with:
           files: test-results/**/junit.xml
+          check_run: false
