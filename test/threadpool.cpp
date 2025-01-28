@@ -93,11 +93,7 @@ TEST_F(ThreadPoolTest, ParallelExecution)
         });
     }
 
-    while (!latch.try_wait()) {
-        std::this_thread::yield();
-        constexpr auto DELAY = 10U;
-        std::this_thread::sleep_for(std::chrono::microseconds(DELAY));
-    }
+    latch.wait();
 
     EXPECT_EQ(this->m_pool->max_active_threads(), ThreadPoolTest::NUM_THREADS);
     EXPECT_EQ(this->m_pool->active_threads(), ThreadPoolTest::NUM_THREADS);
@@ -110,7 +106,9 @@ TEST_F(ThreadPoolTest, ParallelExecution)
     this->m_pool->wait();
 
     EXPECT_EQ(this->m_pool->tasks_completed(), ThreadPoolTest::NUM_THREADS);
+    sem.acquire();
     EXPECT_THAT(results, ::testing::UnorderedElementsAreArray(expected.begin(), expected.end()));
+    sem.release();
 }
 
 TEST(ConstructionDestructionTest, DefaultConstruction)
@@ -140,11 +138,7 @@ TEST(ConstructionDestructionTest, DestructionWithActiveTasks)
             );
         }
 
-        while (!latch.try_wait()) {
-            std::this_thread::yield();
-            constexpr auto DELAY = 10U;
-            std::this_thread::sleep_for(std::chrono::microseconds(DELAY));
-        }
+        latch.wait();
 
         EXPECT_EQ(pool.active_threads(), NUM_THREADS);
         EXPECT_EQ(pool.work_queue_size(), NUM_TASKS - NUM_THREADS);
