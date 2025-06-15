@@ -80,7 +80,7 @@ jobs:
     needs: test
     name: Publish Results
     runs-on: ubuntu-latest
-    if: always()
+    if: !cancelled()
     permissions:
       contents: read
       checks: write
