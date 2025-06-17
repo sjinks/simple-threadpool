@@ -68,7 +68,7 @@ jobs:
         run: ctest --output-on-failure -V -S "ci/${{ matrix.script }}.ctest.cmake"
 
       - name: Upload test tesults
-        if: always()
+        if: (!cancelled())
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Test Results (${{ matrix.script }})
@@ -80,7 +80,7 @@ jobs:
     needs: test
     name: Publish Results
     runs-on: ubuntu-latest
-    if: !canceled()
+    if: (!cancelled())
     permissions:
       contents: read
       checks: write
@@ -100,7 +100,7 @@ jobs:
           path: test-results
 
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@170bf24d20d201b842d7a52403b73ed297e6645b # v2.18.0
+        uses: EnricoMi/publish-unit-test-result-action@3a74b2957438d0b6e2e61d67b05318aa25c9e6c6 # v2.20.0
         with:
           files: test-results/**/junit.xml
           check_run: false
