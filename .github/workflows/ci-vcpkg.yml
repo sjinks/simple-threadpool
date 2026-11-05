@@ -64,9 +64,8 @@ jobs:
             vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ matrix.triplet }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
             vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ matrix.triplet }}-
 
-      - name: Fix for AppleClang
+      - name: Enable experimental C++ library
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
           echo "CXXFLAGS=-fexperimental-library" >> "${GITHUB_ENV}"
         if: runner.os == 'macOS'
 
