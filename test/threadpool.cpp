@@ -19,6 +19,13 @@
 
 const auto empty_task = [](const std::stop_token&) { /* Do nothing */ };
 
+namespace {
+[[noreturn]] void failing_task(const std::stop_token&)
+{
+    throw std::runtime_error("Task failed");
+}
+}  // namespace
+
 class ThreadPoolTest : public ::testing::Test {
 protected:
     void SetUp() override { this->m_pool = std::make_unique<wwa::thread_pool>(ThreadPoolTest::NUM_THREADS); }
@@ -53,10 +60,9 @@ TEST_F(ThreadPoolTest, Counters)
     int first_task_has_exception  = -1;
     int second_task_has_exception = -1;
 
-    this->m_pool->submit(
-        [](const std::stop_token&) { throw std::runtime_error("Task failed"); },
-        [&first_task_has_exception](bool) { first_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0; }
-    );
+    this->m_pool->submit(failing_task, [&first_task_has_exception](bool) {
+        first_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0;
+    });
 
     this->m_pool->submit(empty_task, [&second_task_has_exception](bool) {
         second_task_has_exception = (std::current_exception() != nullptr) ? 1 : 0;
