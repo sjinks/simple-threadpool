@@ -164,9 +164,13 @@ void thread_pool_private::worker_thread(
 
             if (!task->stop_source.stop_requested()) {
                 pool->m_stop_sources[thread_index] = task->stop_source;
+                // Keep the queued-to-active transition atomic with respect to wait().
+                const auto n = pool->m_active_threads.fetch_add(1U, std::memory_order_relaxed) + 1U;
+                atomic_fetch_max(pool->m_max_active_threads, n);
                 lock.unlock();
                 pool->run_task(task);
                 lock.lock();
+                pool->m_active_threads.fetch_sub(1U, std::memory_order_relaxed);
             }
             else {
                 pool->m_tasks_canceled.fetch_add(1U, std::memory_order_relaxed);
@@ -181,9 +185,6 @@ void thread_pool_private::worker_thread(
 
 void thread_pool_private::run_task(const std::shared_ptr<work_item>& task)
 {
-    auto n = this->m_active_threads.fetch_add(1U, std::memory_order_relaxed) + 1U;
-    atomic_fetch_max(this->m_max_active_threads, n);
-
     try {
         task->worker(task->stop_source.get_token());
         task->after_work(false);
@@ -193,8 +194,6 @@ void thread_pool_private::run_task(const std::shared_ptr<work_item>& task)
         task->after_work(false);
         this->m_tasks_failed.fetch_add(1U, std::memory_order_relaxed);
     }
-
-    this->m_active_threads.fetch_sub(1U, std::memory_order_relaxed);
 }
 
 }  // namespace wwa
