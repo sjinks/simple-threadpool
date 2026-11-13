@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -150,4 +151,33 @@ TEST_F(OneThreadPoolTest, Wait)
 TEST_F(OneThreadPoolTest, WaitUntilPast)
 {
     EXPECT_FALSE(this->m_pool->wait_until(std::chrono::system_clock::now() - std::chrono::seconds(1)));
+}
+
+TEST_F(OneThreadPoolTest, WaitForSubmittedTask)
+{
+    for (auto i = 0U; i < 10000U; ++i) {
+        std::promise<void> completed;
+        auto result = completed.get_future();
+        this->m_pool->submit(empty_task, [&completed](bool) { completed.set_value(); });
+
+        this->m_pool->wait();
+        const auto status = result.wait_for(std::chrono::seconds(0));
+        result.wait();
+        ASSERT_EQ(status, std::future_status::ready) << "Iteration " << i;
+    }
+}
+
+TEST_F(OneThreadPoolTest, WaitUntilSubmittedTask)
+{
+    for (auto i = 0U; i < 10000U; ++i) {
+        std::promise<void> completed;
+        auto result = completed.get_future();
+        this->m_pool->submit(empty_task, [&completed](bool) { completed.set_value(); });
+
+        const auto drained = this->m_pool->wait_for(std::chrono::seconds(5));
+        const auto status  = result.wait_for(std::chrono::seconds(0));
+        result.wait();
+        ASSERT_TRUE(drained) << "Iteration " << i;
+        ASSERT_EQ(status, std::future_status::ready) << "Iteration " << i;
+    }
 }
